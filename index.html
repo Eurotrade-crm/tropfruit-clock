@@ -58,18 +58,6 @@
     overflow: hidden;
   }
 
-  .panel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: var(--citrus-pattern);
-    background-size: 76px 76px;
-    background-repeat: repeat;
-    opacity: 0.55;
-    z-index: 0;
-    pointer-events: none;
-  }
-
   .panel > * { position: relative; z-index: 1; }
 
   .label {
@@ -256,39 +244,6 @@
 </div>
 
 <script>
-  /* ---------- Motif "toile de fond" d'oranges pour le cadre ---------- */
-  (function buildCitrusPattern() {
-    const slice = (tx, ty, r, scale) => `
-      <g transform="translate(${tx},${ty}) scale(${scale})">
-        <circle r="${r}" fill="#F3B65A"/>
-        <circle r="${r * 0.8}" fill="#FBEFC9"/>
-        <g fill="#F5A93D">
-          <path d="M0 0 L0 ${-r * 0.8} A${r * 0.8} ${r * 0.8} 0 0 1 ${r * 0.69} ${-r * 0.4} Z"/>
-          <path d="M0 0 L${r * 0.69} ${-r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 ${r * 0.69} ${r * 0.4} Z"/>
-          <path d="M0 0 L${r * 0.69} ${r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 0 ${r * 0.8} Z"/>
-          <path d="M0 0 L0 ${r * 0.8} A${r * 0.8} ${r * 0.8} 0 0 1 ${-r * 0.69} ${r * 0.4} Z"/>
-          <path d="M0 0 L${-r * 0.69} ${r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 ${-r * 0.69} ${-r * 0.4} Z"/>
-          <path d="M0 0 L${-r * 0.69} ${-r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 0 ${-r * 0.8} Z"/>
-        </g>
-      </g>`;
-    const whole = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#EE8A22"/>`;
-
-    const tile = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="76" height="76" viewBox="0 0 76 76">
-        ${whole(12, 14, 7)}
-        ${slice(58, 10, 10, 1)}
-        ${whole(64, 46, 6)}
-        ${slice(16, 52, 9, 0.9)}
-        ${whole(40, 66, 5.5)}
-        ${slice(36, 32, 7, 0.7)}
-      </svg>`;
-
-    document.documentElement.style.setProperty(
-      '--citrus-pattern',
-      `url("data:image/svg+xml,${encodeURIComponent(tile)}")`
-    );
-  })();
-
   /* ---------- Fond : plantation d'agrumes ---------- */
   (function drawOrchard() {
     const svg = document.getElementById('bg');
@@ -323,11 +278,71 @@
     sunGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#FFF4D6', 'stop-opacity': '0' }));
     defs.appendChild(sunGrad);
 
+    const brush = el('filter', { id: 'brush', x: '-40%', y: '-40%', width: '180%', height: '180%' });
+    const turb = el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.9', numOctaves: '2', seed: '7', result: 'noise' });
+    const disp = el('feDisplacementMap', { in: 'SourceGraphic', in2: 'noise', scale: '6' });
+    brush.appendChild(turb);
+    brush.appendChild(disp);
+    defs.appendChild(brush);
+
+    function drawPaintedSun(cx, cy, r) {
+      const sun = el('g', { filter: 'url(#brush)' });
+
+      // halo doux
+      svg.appendChild(el('circle', { cx, cy, r: r * 2.3, fill: 'url(#sun)' }));
+
+      // rayons façon coups de pinceau
+      const rayCount = 16;
+      for (let i = 0; i < rayCount; i++) {
+        const angle = (i / rayCount) * Math.PI * 2 + rand() * 0.05;
+        const len = r * (0.85 + rand() * 0.5);
+        const baseW = r * (0.12 + rand() * 0.05);
+        const baseR = r * 0.98;
+        const dx = Math.cos(angle), dy = Math.sin(angle);
+        const px = -dy, py = dx;
+        const bx = cx + dx * baseR, by = cy + dy * baseR;
+        const tx = cx + dx * (baseR + len), ty = cy + dy * (baseR + len);
+        const p1x = bx + px * baseW, p1y = by + py * baseW;
+        const p2x = bx - px * baseW, p2y = by - py * baseW;
+        const color = i % 2 === 0 ? '#F5A623' : '#FBC531';
+        const path = el('path', {
+          d: `M ${p1x} ${p1y} Q ${tx + px * baseW * 0.2} ${ty + py * baseW * 0.2} ${tx} ${ty} Q ${tx - px * baseW * 0.2} ${ty - py * baseW * 0.2} ${p2x} ${p2y} Z`,
+          fill: color
+        });
+        sun.appendChild(path);
+      }
+
+      // coeur en spirale (deux rubans entrelacés)
+      function spiralPath(phase, turns, r0, r1) {
+        const steps = 90;
+        let d = '';
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps;
+          const theta = t * turns * Math.PI * 2 + phase;
+          const rr = r0 + (r1 - r0) * t;
+          const x = cx + Math.cos(theta) * rr;
+          const y = cy + Math.sin(theta) * rr;
+          d += (s === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+        }
+        return d;
+      }
+
+      sun.appendChild(el('circle', { cx, cy, r: r * 0.98, fill: '#F7A61E' }));
+      sun.appendChild(el('path', {
+        d: spiralPath(0, 2.1, r * 0.94, r * 0.06),
+        fill: 'none', stroke: '#FBC531', 'stroke-width': r * 0.24, 'stroke-linecap': 'round'
+      }));
+      sun.appendChild(el('path', {
+        d: spiralPath(Math.PI, 2.1, r * 0.94, r * 0.06),
+        fill: 'none', stroke: '#FFE9A8', 'stroke-width': r * 0.16, 'stroke-linecap': 'round'
+      }));
+
+      svg.appendChild(sun);
+    }
+
     svg.appendChild(defs);
     svg.appendChild(el('rect', { x: 0, y: 0, width: 1600, height: 900, fill: 'url(#sky)' }));
-    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 340, fill: 'url(#sun)' }));
-    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 150, fill: '#FFF6DE', opacity: 0.55 }));
-    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 78, fill: '#FFEFC4' }));
+    drawPaintedSun(220, 470, 150);
 
     // collines lointaines
     svg.appendChild(el('ellipse', { cx: 300, cy: 560, rx: 620, ry: 90, fill: '#B7C77E', opacity: 0.55 }));
