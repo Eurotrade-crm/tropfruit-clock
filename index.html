@@ -180,20 +180,20 @@
     gap: 0;
   }
 
-  .breakdown div { padding: 0 6px; border-left: 1px solid var(--line); }
+  .breakdown div { padding: 0 4px; border-left: 1px solid var(--line); }
   .breakdown div:first-child { border-left: none; }
 
   .breakdown .period {
-    font-size: clamp(0.58rem, 1.6vw, 0.72rem);
+    font-size: clamp(0.5rem, 1.3vw, 0.62rem);
     color: var(--ink-muted);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     white-space: nowrap;
   }
 
   .breakdown .value {
     font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 600;
-    font-size: clamp(0.62rem, 1.9vw, 0.95rem);
+    font-size: clamp(0.52rem, 1.5vw, 0.78rem);
     color: var(--amber);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -201,18 +201,7 @@
 
   .breakdown .value .grp-gap {
     display: inline-block;
-    width: 0.3em;
-  }
-
-  footer {
-    margin-top: 28px;
-    font-size: 0.7rem;
-    color: var(--ink-muted);
-    line-height: 1.6;
-  }
-
-  @media (max-width: 420px) {
-    .breakdown .value { font-size: 0.85rem; }
+    width: 0.25em;
   }
 </style>
 </head>
@@ -249,11 +238,6 @@
       <div class="value" id="quarter">+0 USD</div>
     </div>
   </div>
-
-  <footer>
-    Starting principal 2,238,730 USD on 16/02/2024 · simple interest at the Bundesbank<br>
-    base rate (§247 BGB) + 5 points, updated at each semi-annual change.
-  </footer>
 </div>
 
 <script>
