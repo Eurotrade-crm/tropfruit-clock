@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Montant dû — capital et intérêts</title>
+<title>Tropfruit Money Clock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -61,10 +61,14 @@
   .panel > * { position: relative; z-index: 1; }
 
   .label {
-    font-size: 0.85rem;
-    color: var(--ink-muted);
-    margin-bottom: 22px;
-    letter-spacing: 0.01em;
+    width: 50%;
+    margin: 0 auto 26px;
+    font-size: clamp(1.3rem, 5.5vw, 2.3rem);
+    font-weight: 600;
+    font-variant: small-caps;
+    letter-spacing: 0.03em;
+    color: var(--amber);
+    line-height: 1.15;
   }
 
   .clock-row {
@@ -216,7 +220,7 @@
 <svg id="bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice"></svg>
 
 <div class="panel">
-  <div class="label">Capital et intérêts échus</div>
+  <div class="label">Tropfruit money clock</div>
 
   <div class="clock-row" id="clockRow"></div>
 
@@ -224,22 +228,22 @@
 
   <div class="breakdown">
     <div>
-      <div class="period">7 derniers jours</div>
+      <div class="period">Last 7 days</div>
       <div class="value" id="week">+0 USD</div>
     </div>
     <div>
-      <div class="period">30 derniers jours</div>
+      <div class="period">Last 30 days</div>
       <div class="value" id="month">+0 USD</div>
     </div>
     <div>
-      <div class="period">90 derniers jours</div>
+      <div class="period">Last 90 days</div>
       <div class="value" id="quarter">+0 USD</div>
     </div>
   </div>
 
   <footer>
-    Capital initial 2 238 730 USD au 16/02/2024 · intérêts simples au taux de base<br>
-    de la Bundesbank (§247 BGB) + 5 points, actualisé à chaque changement semestriel.
+    Starting principal 2,238,730 USD on 16/02/2024 · simple interest at the Bundesbank<br>
+    base rate (§247 BGB) + 5 points, updated at each semi-annual change.
   </footer>
 </div>
 
@@ -437,10 +441,6 @@
       total += PRINCIPAL * (p.rate / 100) * (days / 365);
     }
     return total;
-  }
-
-  function fmt(n) {
-    return Math.round(n).toLocaleString('fr-FR');
   }
 
   function groupDigits(n) {
