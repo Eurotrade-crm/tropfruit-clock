@@ -6,15 +6,18 @@
 <title>Montant dû — capital et intérêts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0B1B2B;
-    --gold: #C9A24B;
-    --gold-soft: rgba(201, 162, 75, 0.35);
-    --ink: #EDE6D6;
-    --ink-muted: #7E93AA;
-    --line: #1E3A56;
+    --tile-dark: #2c2c30;
+    --tile-darker: #1d1d20;
+    --tile-light: #3b3b40;
+    --seam: rgba(0,0,0,0.55);
+    --panel-bg: rgba(255, 251, 240, 0.94);
+    --ink: #2E3B2A;
+    --ink-muted: #6C7A63;
+    --amber: #D98A2B;
+    --line: #E3D9BE;
   }
 
   * { box-sizing: border-box; }
@@ -22,51 +25,161 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'IBM Plex Sans', sans-serif;
     height: 100%;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--ink);
+  }
+
+  #bg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
   }
 
   body {
+    min-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 32px 20px;
+    padding: 32px 18px;
   }
 
-  .card {
+  .panel {
+    position: relative;
     width: 100%;
-    max-width: 620px;
+    max-width: 680px;
     text-align: center;
+    background: var(--panel-bg);
+    border-radius: 18px;
+    padding: 40px 28px 32px;
+    box-shadow: 0 24px 60px rgba(40, 30, 10, 0.28), 0 2px 0 rgba(255,255,255,0.6) inset;
+    overflow: hidden;
   }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--citrus-pattern);
+    background-size: 76px 76px;
+    background-repeat: repeat;
+    opacity: 0.55;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .panel > * { position: relative; z-index: 1; }
 
   .label {
     font-size: 0.85rem;
     color: var(--ink-muted);
-    margin-bottom: 10px;
+    margin-bottom: 22px;
+    letter-spacing: 0.01em;
   }
 
-  .amount {
-    font-family: 'Newsreader', serif;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    font-size: clamp(2.4rem, 8.5vw, 4.2rem);
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+  .clock-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(4px, 0.9vw, 8px);
+    flex-wrap: wrap;
   }
 
-  .amount .currency {
-    font-size: 0.5em;
-    color: var(--gold);
-    margin-left: 10px;
-    vertical-align: middle;
+  .group-gap {
+    width: clamp(10px, 3vw, 22px);
+    flex-shrink: 0;
+  }
+
+  .currency-tag {
+    margin-left: clamp(8px, 2vw, 16px);
+    align-self: center;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: clamp(0.85rem, 2.4vw, 1.15rem);
+    color: var(--amber);
+    letter-spacing: 0.06em;
+    border: 1.5px solid var(--amber);
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+
+  .rotor {
+    --h: clamp(2.6rem, 9vw, 4.4rem);
+    --w: calc(var(--h) * 0.68);
+    position: relative;
+    width: var(--w);
+    height: var(--h);
+    border-radius: calc(var(--h) * 0.12);
+    overflow: hidden;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+    perspective: calc(var(--h) * 4);
+    flex-shrink: 0;
+  }
+
+  .rotor .face {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    overflow: hidden;
+    backface-visibility: hidden;
+  }
+
+  .rotor .top { top: 0; background: linear-gradient(to bottom, var(--tile-light), var(--tile-dark)); }
+  .rotor .bottom { bottom: 0; background: linear-gradient(to bottom, var(--tile-darker), #141416); }
+
+  .rotor .num {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--h);
+    text-align: center;
+    line-height: var(--h);
+    font-family: 'Archivo Black', sans-serif;
+    font-size: calc(var(--h) * 0.72);
+    color: #F5F3EC;
+  }
+
+  .rotor .top .num { top: 0; }
+  .rotor .bottom .num { top: calc(var(--h) * -0.5); }
+
+  .rotor .seam {
+    position: absolute;
+    top: calc(50% - 1px);
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--seam);
+    z-index: 5;
+  }
+
+  .rotor .leaf-front,
+  .rotor .leaf-rear {
+    z-index: 3;
+    transform-style: preserve-3d;
+  }
+
+  .rotor .leaf-front { top: 0; transform-origin: bottom; background: linear-gradient(to bottom, var(--tile-light), var(--tile-dark)); }
+  .rotor .leaf-rear { bottom: 0; transform-origin: top; background: linear-gradient(to bottom, var(--tile-darker), #141416); transform: rotateX(90deg); }
+
+  .rotor.flipping .leaf-front { animation: flipFront 0.55s ease-in forwards; }
+  .rotor.flipping .leaf-rear { animation: flipRear 0.55s ease-out forwards; animation-delay: 0.27s; }
+
+  @keyframes flipFront {
+    0%   { transform: rotateX(0deg); }
+    100% { transform: rotateX(-90deg); }
+  }
+  @keyframes flipRear {
+    0%   { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
   }
 
   .rule {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
-    margin: 34px 0 30px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+    margin: 32px 0 26px;
   }
 
   .breakdown {
@@ -75,60 +188,64 @@
     gap: 0;
   }
 
-  .breakdown div {
-    padding: 0 10px;
-    border-left: 1px solid var(--line);
-  }
-
-  .breakdown div:first-child {
-    border-left: none;
-  }
+  .breakdown div { padding: 0 10px; border-left: 1px solid var(--line); }
+  .breakdown div:first-child { border-left: none; }
 
   .breakdown .period {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--ink-muted);
     margin-bottom: 8px;
   }
 
   .breakdown .value {
-    font-family: 'Newsreader', serif;
-    font-size: 1.3rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: clamp(0.95rem, 2.6vw, 1.2rem);
+    color: var(--amber);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .breakdown .value .grp-gap {
+    display: inline-block;
+    width: 0.4em;
   }
 
   footer {
-    margin-top: 34px;
-    font-size: 0.72rem;
+    margin-top: 28px;
+    font-size: 0.7rem;
     color: var(--ink-muted);
     line-height: 1.6;
   }
 
-  @media (max-width: 480px) {
-    .breakdown { gap: 0; }
-    .breakdown .value { font-size: 1.05rem; }
+  @media (max-width: 420px) {
+    .breakdown .value { font-size: 0.85rem; }
   }
 </style>
 </head>
 <body>
 
-<div class="card">
+<svg id="bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice"></svg>
+
+<div class="panel">
   <div class="label">Capital et intérêts échus</div>
-  <div class="amount"><span id="total">0</span><span class="currency">USD</span></div>
+
+  <div class="clock-row" id="clockRow"></div>
 
   <div class="rule"></div>
 
   <div class="breakdown">
     <div>
       <div class="period">7 derniers jours</div>
-      <div class="value" id="week">+0</div>
+      <div class="value" id="week">+0 USD</div>
     </div>
     <div>
       <div class="period">30 derniers jours</div>
-      <div class="value" id="month">+0</div>
+      <div class="value" id="month">+0 USD</div>
     </div>
     <div>
       <div class="period">90 derniers jours</div>
-      <div class="value" id="quarter">+0</div>
+      <div class="value" id="quarter">+0 USD</div>
     </div>
   </div>
 
@@ -139,12 +256,146 @@
 </div>
 
 <script>
+  /* ---------- Motif "toile de fond" d'oranges pour le cadre ---------- */
+  (function buildCitrusPattern() {
+    const slice = (tx, ty, r, scale) => `
+      <g transform="translate(${tx},${ty}) scale(${scale})">
+        <circle r="${r}" fill="#F3B65A"/>
+        <circle r="${r * 0.8}" fill="#FBEFC9"/>
+        <g fill="#F5A93D">
+          <path d="M0 0 L0 ${-r * 0.8} A${r * 0.8} ${r * 0.8} 0 0 1 ${r * 0.69} ${-r * 0.4} Z"/>
+          <path d="M0 0 L${r * 0.69} ${-r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 ${r * 0.69} ${r * 0.4} Z"/>
+          <path d="M0 0 L${r * 0.69} ${r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 0 ${r * 0.8} Z"/>
+          <path d="M0 0 L0 ${r * 0.8} A${r * 0.8} ${r * 0.8} 0 0 1 ${-r * 0.69} ${r * 0.4} Z"/>
+          <path d="M0 0 L${-r * 0.69} ${r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 ${-r * 0.69} ${-r * 0.4} Z"/>
+          <path d="M0 0 L${-r * 0.69} ${-r * 0.4} A${r * 0.8} ${r * 0.8} 0 0 1 0 ${-r * 0.8} Z"/>
+        </g>
+      </g>`;
+    const whole = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#EE8A22"/>`;
+
+    const tile = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="76" height="76" viewBox="0 0 76 76">
+        ${whole(12, 14, 7)}
+        ${slice(58, 10, 10, 1)}
+        ${whole(64, 46, 6)}
+        ${slice(16, 52, 9, 0.9)}
+        ${whole(40, 66, 5.5)}
+        ${slice(36, 32, 7, 0.7)}
+      </svg>`;
+
+    document.documentElement.style.setProperty(
+      '--citrus-pattern',
+      `url("data:image/svg+xml,${encodeURIComponent(tile)}")`
+    );
+  })();
+
+  /* ---------- Fond : plantation d'agrumes ---------- */
+  (function drawOrchard() {
+    const svg = document.getElementById('bg');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    function seeded(seed) {
+      let t = seed;
+      return function () { t = (t * 9301 + 49297) % 233280; return t / 233280; };
+    }
+    const rand = seeded(42);
+
+    function el(tag, attrs) {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+
+    const defs = el('defs', {});
+    const skyGrad = el('linearGradient', { id: 'sky', x1: '0', y1: '0', x2: '0', y2: '1' });
+    skyGrad.appendChild(el('stop', { offset: '0%', 'stop-color': '#FCEBC0' }));
+    skyGrad.appendChild(el('stop', { offset: '55%', 'stop-color': '#F6DE9C' }));
+    skyGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#E7D390' }));
+    defs.appendChild(skyGrad);
+
+    const groundGrad = el('linearGradient', { id: 'ground', x1: '0', y1: '0', x2: '0', y2: '1' });
+    groundGrad.appendChild(el('stop', { offset: '0%', 'stop-color': '#CDA45C' }));
+    groundGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#A9793E' }));
+    defs.appendChild(groundGrad);
+
+    const sunGrad = el('radialGradient', { id: 'sun', cx: '50%', cy: '50%', r: '50%' });
+    sunGrad.appendChild(el('stop', { offset: '0%', 'stop-color': '#FFF4D6', 'stop-opacity': '0.9' }));
+    sunGrad.appendChild(el('stop', { offset: '100%', 'stop-color': '#FFF4D6', 'stop-opacity': '0' }));
+    defs.appendChild(sunGrad);
+
+    svg.appendChild(defs);
+    svg.appendChild(el('rect', { x: 0, y: 0, width: 1600, height: 900, fill: 'url(#sky)' }));
+    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 340, fill: 'url(#sun)' }));
+    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 150, fill: '#FFF6DE', opacity: 0.55 }));
+    svg.appendChild(el('circle', { cx: 200, cy: 150, r: 78, fill: '#FFEFC4' }));
+
+    // collines lointaines
+    svg.appendChild(el('ellipse', { cx: 300, cy: 560, rx: 620, ry: 90, fill: '#B7C77E', opacity: 0.55 }));
+    svg.appendChild(el('ellipse', { cx: 1250, cy: 580, rx: 700, ry: 100, fill: '#A9BE72', opacity: 0.5 }));
+
+    svg.appendChild(el('rect', { x: 0, y: 540, width: 1600, height: 360, fill: 'url(#ground)' }));
+
+    const trunkColor = '#6B4A30';
+    const foliage = ['#4C7A3E', '#5B8B48', '#3F6B34'];
+    const fruitColors = ['#E8871E', '#F2C230', '#EE9B2E'];
+
+    function tree(x, y, scale, group) {
+      const g = el('g', { transform: `translate(${x},${y}) scale(${scale})` });
+
+      g.appendChild(el('ellipse', { cx: 0, cy: 6, rx: 34, ry: 8, fill: 'rgba(0,0,0,0.18)' }));
+      g.appendChild(el('rect', { x: -4, y: -30, width: 8, height: 34, fill: trunkColor, rx: 2 }));
+
+      const canopyPositions = [
+        { dx: -16, dy: -46, r: 22 },
+        { dx: 14, dy: -50, r: 24 },
+        { dx: 0, dy: -64, r: 24 },
+        { dx: -6, dy: -34, r: 20 }
+      ];
+      canopyPositions.forEach((c, i) => {
+        g.appendChild(el('circle', {
+          cx: c.dx, cy: c.dy, r: c.r,
+          fill: foliage[(i + Math.floor(rand() * 3)) % foliage.length]
+        }));
+      });
+
+      const fruitCount = 5 + Math.floor(rand() * 4);
+      for (let i = 0; i < fruitCount; i++) {
+        const ang = rand() * Math.PI * 2;
+        const rad = 14 + rand() * 24;
+        const fx = Math.cos(ang) * rad;
+        const fy = -46 + Math.sin(ang) * rad * 0.8;
+        g.appendChild(el('circle', {
+          cx: fx, cy: fy, r: 2.6 + rand() * 1.6,
+          fill: fruitColors[Math.floor(rand() * fruitColors.length)]
+        }));
+      }
+
+      group.appendChild(g);
+    }
+
+    const rows = [
+      { y: 600, scale: 0.55, count: 15 },
+      { y: 670, scale: 0.72, count: 12 },
+      { y: 750, scale: 0.95, count: 9 },
+      { y: 840, scale: 1.25, count: 7 }
+    ];
+
+    rows.forEach(row => {
+      const group = el('g', {});
+      const step = 1700 / row.count;
+      for (let i = 0; i < row.count; i++) {
+        const x = -50 + i * step + (rand() - 0.5) * step * 0.4;
+        const y = row.y + (rand() - 0.5) * 14;
+        tree(x, y, row.scale, group);
+      }
+      svg.appendChild(group);
+    });
+  })();
+
+  /* ---------- Calcul des intérêts ---------- */
   const PRINCIPAL = 2238730;
   const START = new Date('2024-02-16T00:00:00Z');
 
-  // Historique du Basiszinssatz (Bundesbank, §247 BGB) + 5 points.
-  // Source : bundesbank.de/de/bundesbank/organisation/agb-und-regelungen/basiszinssatz-607820
-  // Le dernier taux connu (à partir du 01.07.2026) est prolongé jusqu'à publication du taux suivant.
   const PERIODS = [
     { start: '2024-02-16', end: '2024-06-30', rate: 8.62 },
     { start: '2024-07-01', end: '2024-12-31', rate: 8.37 },
@@ -160,8 +411,6 @@
 
   const MS_DAY = 24 * 60 * 60 * 1000;
 
-  // Intérêts simples courus entre "from" et "to" (dates JS), au prorata des jours
-  // dans chaque période de taux applicable, base actual/365.
   function accruedInterest(from, to) {
     if (to <= from) return 0;
     let total = 0;
@@ -179,18 +428,138 @@
     return Math.round(n).toLocaleString('fr-FR');
   }
 
-  const totalEl = document.getElementById('total');
+  function groupDigits(n) {
+    const s = String(Math.round(n));
+    const groups = [];
+    let i = s.length;
+    while (i > 3) { groups.unshift(s.slice(i - 3, i)); i -= 3; }
+    groups.unshift(s.slice(0, i));
+    return groups;
+  }
+
+  function fmtGroupedHTML(n) {
+    return groupDigits(n)
+      .map(g => `<span class="grp">${g}</span>`)
+      .join('<span class="grp-gap"></span>');
+  }
+
+  /* ---------- Horloge à chiffres basculants ---------- */
+  const clockRow = document.getElementById('clockRow');
+  let tiles = [];
+  let currentDigits = '';
+
+  function buildClock(digitStr) {
+    clockRow.innerHTML = '';
+    tiles = [];
+    const len = digitStr.length;
+
+    for (let i = 0; i < len; i++) {
+      const posFromRight = len - i;
+      if (i > 0 && posFromRight % 3 === 0) {
+        const gap = document.createElement('div');
+        gap.className = 'group-gap';
+        clockRow.appendChild(gap);
+      }
+      tiles.push(createTile(digitStr[i]));
+    }
+
+    const tag = document.createElement('div');
+    tag.className = 'currency-tag';
+    tag.textContent = 'USD';
+    clockRow.appendChild(tag);
+
+    currentDigits = digitStr;
+  }
+
+  function createTile(digit) {
+    const rotor = document.createElement('div');
+    rotor.className = 'rotor';
+
+    const top = document.createElement('div');
+    top.className = 'face top';
+    const topNum = document.createElement('div');
+    topNum.className = 'num';
+    topNum.textContent = digit;
+    top.appendChild(topNum);
+
+    const bottom = document.createElement('div');
+    bottom.className = 'face bottom';
+    const bottomNum = document.createElement('div');
+    bottomNum.className = 'num';
+    bottomNum.textContent = digit;
+    bottom.appendChild(bottomNum);
+
+    const seam = document.createElement('div');
+    seam.className = 'seam';
+
+    const leafFront = document.createElement('div');
+    leafFront.className = 'face leaf-front';
+    const leafFrontNum = document.createElement('div');
+    leafFrontNum.className = 'num';
+    leafFrontNum.textContent = digit;
+    leafFront.appendChild(leafFrontNum);
+
+    const leafRear = document.createElement('div');
+    leafRear.className = 'face leaf-rear';
+    const leafRearNum = document.createElement('div');
+    leafRearNum.className = 'num';
+    leafRearNum.textContent = digit;
+    leafRear.appendChild(leafRearNum);
+
+    rotor.appendChild(top);
+    rotor.appendChild(bottom);
+    rotor.appendChild(leafFront);
+    rotor.appendChild(leafRear);
+    rotor.appendChild(seam);
+
+    clockRow.insertBefore(rotor, null);
+
+    rotor._refs = { top: topNum, bottom: bottomNum, leafFront: leafFrontNum, leafRear: leafRearNum, value: digit };
+    return rotor;
+  }
+
+  function flipTile(rotor, newDigit) {
+    const refs = rotor._refs;
+    if (refs.value === newDigit) return;
+
+    refs.top.textContent = newDigit;
+    refs.leafFront.textContent = refs.value;
+    refs.leafRear.textContent = newDigit;
+
+    rotor.classList.remove('flipping');
+    void rotor.offsetWidth; // force reflow to restart animation
+    rotor.classList.add('flipping');
+
+    setTimeout(() => {
+      refs.bottom.textContent = newDigit;
+      rotor.classList.remove('flipping');
+      refs.leafFront.textContent = newDigit;
+      refs.value = newDigit;
+    }, 560);
+  }
+
+  function updateClock(valueInt) {
+    const digitStr = String(valueInt);
+    if (digitStr.length !== currentDigits.length) {
+      buildClock(digitStr);
+      return;
+    }
+    for (let i = 0; i < digitStr.length; i++) {
+      if (digitStr[i] !== currentDigits[i]) {
+        flipTile(tiles[i], digitStr[i]);
+      }
+    }
+    currentDigits = digitStr;
+  }
+
   const weekEl = document.getElementById('week');
   const monthEl = document.getElementById('month');
   const quarterEl = document.getElementById('quarter');
 
-  let lastShown = null;
-
   function tick() {
     const now = new Date();
-
     const interestToDate = accruedInterest(START, now);
-    const totalValue = PRINCIPAL + interestToDate;
+    const totalValue = Math.round(PRINCIPAL + interestToDate);
 
     const weekAgo = new Date(now.getTime() - 7 * MS_DAY);
     const monthAgo = new Date(now.getTime() - 30 * MS_DAY);
@@ -200,21 +569,16 @@
     const monthGain = accruedInterest(monthAgo > START ? monthAgo : START, now);
     const quarterGain = accruedInterest(quarterAgo > START ? quarterAgo : START, now);
 
-    const rounded = Math.round(totalValue);
-    if (lastShown !== null && rounded > lastShown) {
-      totalEl.style.color = 'var(--gold)';
-      setTimeout(() => { totalEl.style.color = ''; }, 260);
-    }
-    lastShown = rounded;
+    updateClock(totalValue);
 
-    totalEl.textContent = fmt(totalValue);
-    weekEl.textContent = '+' + fmt(weekGain);
-    monthEl.textContent = '+' + fmt(monthGain);
-    quarterEl.textContent = '+' + fmt(quarterGain);
+    weekEl.innerHTML = '+' + fmtGroupedHTML(weekGain) + ' USD';
+    monthEl.innerHTML = '+' + fmtGroupedHTML(monthGain) + ' USD';
+    quarterEl.innerHTML = '+' + fmtGroupedHTML(quarterGain) + ' USD';
 
     requestAnimationFrame(tick);
   }
 
+  buildClock(String(Math.round(PRINCIPAL + accruedInterest(START, new Date()))));
   requestAnimationFrame(tick);
 </script>
 
