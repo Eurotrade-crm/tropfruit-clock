@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Montant dû — capital et intérêts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1B2B;
+    --gold: #C9A24B;
+    --gold-soft: rgba(201, 162, 75, 0.35);
+    --ink: #EDE6D6;
+    --ink-muted: #7E93AA;
+    --line: #1E3A56;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 620px;
+    text-align: center;
+  }
+
+  .label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
+  }
+
+  .amount {
+    font-family: 'Newsreader', serif;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(2.4rem, 8.5vw, 4.2rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .amount .currency {
+    font-size: 0.5em;
+    color: var(--gold);
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  .rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+    margin: 34px 0 30px;
+  }
+
+  .breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+
+  .breakdown div {
+    padding: 0 10px;
+    border-left: 1px solid var(--line);
+  }
+
+  .breakdown div:first-child {
+    border-left: none;
+  }
+
+  .breakdown .period {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+
+  .breakdown .value {
+    font-family: 'Newsreader', serif;
+    font-size: 1.3rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  footer {
+    margin-top: 34px;
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 480px) {
+    .breakdown { gap: 0; }
+    .breakdown .value { font-size: 1.05rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="label">Capital et intérêts échus</div>
+  <div class="amount"><span id="total">0</span><span class="currency">USD</span></div>
+
+  <div class="rule"></div>
+
+  <div class="breakdown">
+    <div>
+      <div class="period">7 derniers jours</div>
+      <div class="value" id="week">+0</div>
+    </div>
+    <div>
+      <div class="period">30 derniers jours</div>
+      <div class="value" id="month">+0</div>
+    </div>
+    <div>
+      <div class="period">90 derniers jours</div>
+      <div class="value" id="quarter">+0</div>
+    </div>
+  </div>
+
+  <footer>
+    Capital initial 2 238 730 USD au 16/02/2024 · intérêts simples au taux de base<br>
+    de la Bundesbank (§247 BGB) + 5 points, actualisé à chaque changement semestriel.
+  </footer>
+</div>
+
+<script>
+  const PRINCIPAL = 2238730;
+  const START = new Date('2024-02-16T00:00:00Z');
+
+  // Historique du Basiszinssatz (Bundesbank, §247 BGB) + 5 points.
+  // Source : bundesbank.de/de/bundesbank/organisation/agb-und-regelungen/basiszinssatz-607820
+  // Le dernier taux connu (à partir du 01.07.2026) est prolongé jusqu'à publication du taux suivant.
+  const PERIODS = [
+    { start: '2024-02-16', end: '2024-06-30', rate: 8.62 },
+    { start: '2024-07-01', end: '2024-12-31', rate: 8.37 },
+    { start: '2025-01-01', end: '2025-06-30', rate: 7.27 },
+    { start: '2025-07-01', end: '2025-12-31', rate: 6.27 },
+    { start: '2026-01-01', end: '2026-06-30', rate: 6.27 },
+    { start: '2026-07-01', end: '2099-12-31', rate: 6.52 }
+  ].map(p => ({
+    start: new Date(p.start + 'T00:00:00Z'),
+    end: new Date(p.end + 'T23:59:59Z'),
+    rate: p.rate
+  }));
+
+  const MS_DAY = 24 * 60 * 60 * 1000;
+
+  // Intérêts simples courus entre "from" et "to" (dates JS), au prorata des jours
+  // dans chaque période de taux applicable, base actual/365.
+  function accruedInterest(from, to) {
+    if (to <= from) return 0;
+    let total = 0;
+    for (const p of PERIODS) {
+      const segStart = new Date(Math.max(p.start.getTime(), from.getTime()));
+      const segEnd = new Date(Math.min(p.end.getTime(), to.getTime()));
+      if (segEnd <= segStart) continue;
+      const days = (segEnd.getTime() - segStart.getTime()) / MS_DAY;
+      total += PRINCIPAL * (p.rate / 100) * (days / 365);
+    }
+    return total;
+  }
+
+  function fmt(n) {
+    return Math.round(n).toLocaleString('fr-FR');
+  }
+
+  const totalEl = document.getElementById('total');
+  const weekEl = document.getElementById('week');
+  const monthEl = document.getElementById('month');
+  const quarterEl = document.getElementById('quarter');
+
+  let lastShown = null;
+
+  function tick() {
+    const now = new Date();
+
+    const interestToDate = accruedInterest(START, now);
+    const totalValue = PRINCIPAL + interestToDate;
+
+    const weekAgo = new Date(now.getTime() - 7 * MS_DAY);
+    const monthAgo = new Date(now.getTime() - 30 * MS_DAY);
+    const quarterAgo = new Date(now.getTime() - 90 * MS_DAY);
+
+    const weekGain = accruedInterest(weekAgo > START ? weekAgo : START, now);
+    const monthGain = accruedInterest(monthAgo > START ? monthAgo : START, now);
+    const quarterGain = accruedInterest(quarterAgo > START ? quarterAgo : START, now);
+
+    const rounded = Math.round(totalValue);
+    if (lastShown !== null && rounded > lastShown) {
+      totalEl.style.color = 'var(--gold)';
+      setTimeout(() => { totalEl.style.color = ''; }, 260);
+    }
+    lastShown = rounded;
+
+    totalEl.textContent = fmt(totalValue);
+    weekEl.textContent = '+' + fmt(weekGain);
+    monthEl.textContent = '+' + fmt(monthGain);
+    quarterEl.textContent = '+' + fmt(quarterGain);
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+</script>
+
+</body>
+</html>
