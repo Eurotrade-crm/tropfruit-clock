@@ -75,13 +75,28 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(4px, 0.9vw, 8px);
-    flex-wrap: wrap;
+    gap: clamp(3px, 0.9vw, 8px);
+    flex-wrap: nowrap;
   }
 
   .group-gap {
     width: clamp(10px, 3vw, 22px);
     flex-shrink: 0;
+  }
+
+  .decimal-sep {
+    align-self: flex-end;
+    margin: 0 clamp(1px, 0.4vw, 4px) clamp(2px, 0.6vw, 6px);
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    line-height: 1;
+    color: #2c2c30;
+    flex-shrink: 0;
+  }
+
+  .rotor.cents {
+    --h: calc(var(--H) * 0.75);
+    align-self: flex-end;
   }
 
   .currency-tag {
@@ -98,7 +113,8 @@
   }
 
   .rotor {
-    --h: clamp(2.6rem, 9vw, 4.4rem);
+    --H: clamp(1.4rem, 7.2vw, 4.4rem);
+    --h: var(--H);
     --w: calc(var(--h) * 0.68);
     position: relative;
     width: var(--w);
@@ -202,6 +218,19 @@
   .breakdown .value .grp-gap {
     display: inline-block;
     width: 0.25em;
+  }
+
+  @media (max-width: 360px) {
+    .breakdown { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .breakdown div { padding: 0 2px; }
+    .breakdown .period { font-size: 0.45rem; }
+    .breakdown .value { font-size: 0.44rem; }
+    .breakdown .value .grp-gap { width: 0.15em; }
+  }
+
+  @media (max-width: 480px) {
+    .panel { padding: 36px 12px 28px; }
+    .currency-tag { font-size: 0.75rem; padding: 3px 6px; margin-left: 6px; }
   }
 </style>
 </head>
@@ -339,7 +368,7 @@
 
     svg.appendChild(defs);
     svg.appendChild(el('rect', { x: 0, y: 0, width: 1600, height: 900, fill: 'url(#sky)' }));
-    drawPaintedSun(220, 470, 150);
+    drawPaintedSun(800, 450, 150);
 
     // collines lointaines
     svg.appendChild(el('ellipse', { cx: 300, cy: 560, rx: 620, ry: 90, fill: '#B7C77E', opacity: 0.55 }));
@@ -456,19 +485,27 @@
   let tiles = [];
   let currentDigits = '';
 
+  // digitStr = tous les chiffres, dont les 2 derniers sont les centimes
   function buildClock(digitStr) {
     clockRow.innerHTML = '';
     tiles = [];
     const len = digitStr.length;
+    const intLen = len - 2;
 
     for (let i = 0; i < len; i++) {
-      const posFromRight = len - i;
-      if (i > 0 && posFromRight % 3 === 0) {
+      if (i === intLen) {
+        const comma = document.createElement('div');
+        comma.className = 'decimal-sep';
+        comma.textContent = ',';
+        clockRow.appendChild(comma);
+      } else if (i > 0 && i < intLen && (intLen - i) % 3 === 0) {
         const gap = document.createElement('div');
         gap.className = 'group-gap';
         clockRow.appendChild(gap);
       }
-      tiles.push(createTile(digitStr[i]));
+      const tile = createTile(digitStr[i]);
+      if (i >= intLen) tile.classList.add('cents');
+      tiles.push(tile);
     }
 
     const tag = document.createElement('div');
@@ -569,7 +606,7 @@
   function tick() {
     const now = new Date();
     const interestToDate = accruedInterest(START, now);
-    const totalValue = Math.round(PRINCIPAL + interestToDate);
+    const totalValue = Math.round((PRINCIPAL + interestToDate) * 100); // en centimes
 
     const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const dayAgo = new Date(now.getTime() - 1 * MS_DAY);
@@ -594,7 +631,7 @@
     requestAnimationFrame(tick);
   }
 
-  buildClock(String(Math.round(PRINCIPAL + accruedInterest(START, new Date()))));
+  buildClock(String(Math.round((PRINCIPAL + accruedInterest(START, new Date())) * 100)));
   requestAnimationFrame(tick);
 </script>
 
